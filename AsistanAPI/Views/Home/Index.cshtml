@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Reader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        .form-container {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .email-list {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .email-item {
+            margin-bottom: 10px;
+        }
+
+        .summary-container {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h2>Email Settings</h2>
+            <form id="emailSettingsForm">
+                <label for="pop3Host">POP3 Host:</label>
+                <input type="text" id="pop3Host" name="Pop3Host" required><br><br>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="Username" required><br><br>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="Password" required><br><br>
+                <label for="time">Time (YYYY-MM-DD):</label>
+                <input type="text" id="time" name="Time" required><br><br>
+                <button type="submit">Connect</button>
+            </form>
+        </div>
+        <div class="email-list">
+            <h2>Emails</h2>
+            <ul id="emails"></ul>
+        </div>
+        <div class="summary-container">
+            <h2>Summary</h2>
+            <button id="summarize">Summarize</button>
+            <div id="summary"></div>
+        </div>
+    </div>
+
+    <script>
+        const emailSettingsForm = document.getElementById('emailSettingsForm');
+        const summarizeButton = document.getElementById('summarize');
+        const summaryDiv = document.getElementById('summary');
+
+        emailSettingsForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(emailSettingsForm);
+            const account = {
+                Pop3Host: formData.get('Pop3Host'),
+                Username: formData.get('Username'),
+                Password: formData.get('Password'),
+                Time: formData.get('Time')
+            };
+
+            try {
+                const response = await fetch('/api/Email/Login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(account)
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch emails');
+                const emails = await response.json();
+                displayEmails(emails);
+            } catch (error) {
+                console.error('Error fetching emails:', error);
+                summaryDiv.textContent = 'Error fetching emails. Please check the console for details.';
+            }
+        });
+
+        summarizeButton.addEventListener('click', async () => {
+            const emailsList = document.getElementById('emails');
+            const selectedEmails = Array.from(emailsList.querySelectorAll('li')).map(li => {
+                const emailText = li.textContent;
+                const [from, subject, body] = emailText.split(', ');
+                return {
+                    from: from.split(': ')[1],
+                    subject: subject.split(': ')[1],
+                    body: body.split(': ')[1]
+                };
+            });
+
+            try {
+                const response = await fetch('/api/Email/Summaries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'   //text/html
+                    },
+                    body: JSON.stringify(selectedEmails)
+                });
+
+                if (!response.ok) throw new Error('Failed to generate summary');
+                const summary = await response.text();
+                summaryDiv.textContent = summary;
+            } catch (error) {
+                console.error('Error generating summary:', error);
+                summaryDiv.textContent = 'Error generating summary. Please check the console for details.';
+            }
+        });
+
+        function displayEmails(emails) {
+            const emailsList = document.getElementById('emails');
+            emailsList.innerHTML = '';
+
+            emails.forEach((email) => {
+                const li = document.createElement('li');
+                li.textContent = `From: ${email.from}, Subject: ${email.subject}, Body: ${email.body}`;
+                emailsList.appendChild(li);
+            });
+        }
+
+    </script>
+</body>
+</html>

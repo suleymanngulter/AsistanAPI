@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  asistanapi:
+    image: ${DOCKER_REGISTRY-}asistanapi
+    build:
+      context: .
+      dockerfile: AsistanAPI/Dockerfile
