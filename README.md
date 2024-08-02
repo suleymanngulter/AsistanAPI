@@ -1,0 +1,1 @@
+This API helps you make summerize your emails. You just need to get a ChatGpt token and Add it to program Code just for a time. Then enter your mail account informaiton and enter a time filter. It will summerize for you.
